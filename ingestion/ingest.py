@@ -10,20 +10,18 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 from urllib.parse import urlencode
 
+from db.db import get_session
 from logger import logger
+from repository import IngestedFilesRepository
 
 load_dotenv()
 DELAY_SECONDS = 5
 
 
 def ingest_data(**kwargs) -> None:
-    """Fetch daily weather/climate data for one location and save it to a JSON file.
-
-    Reads ``API_BASE_URL`` and ``DATA_DIR`` from the environment, issues a GET
-    request (with retry on transient 5xx errors) against the configured API
-    for the given coordinates and date range, tags the response with the
-    location's identifying fields, and writes the result to
-    ``{DATA_DIR}/{airport_code}-{start}_{end}.json``.
+    """Fetch daily weather/climate data for one location, save it to a JSON file
+    with the filename format ``{airport_code}-{start}_{end}.json`` and insert a record in the
+    ingestion tracking table.
 
     Args:
         **kwargs: Location and query parameters. Expected keys:
@@ -119,6 +117,16 @@ def ingest_data(**kwargs) -> None:
         with open(os.path.join(DATA_DIR, filename), "w") as f:
             json.dump(result, f, indent=4)
         logger.info(f"Saved data to {filename}!")
+
+        logger.info(
+            f"Inserting {filename} record into ingestion table with status PENDING..."
+        )
+        with get_session() as session:
+            ingested_files_repo = IngestedFilesRepository(session)
+            ingested_files_repo.insert_record(
+                filename, kwargs["airport_code"], start, end
+            )
+        logger.info(f"Inserted {filename} record into ingestion table successfully!")
     except requests.exceptions.ConnectionError as ce:
         logger.error(f"Network Error: Could not connect to the server. Details: {ce}")
     except requests.exceptions.Timeout as te:
