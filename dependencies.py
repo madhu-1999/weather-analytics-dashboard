@@ -2,8 +2,12 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from db.db import get_session
-from repository import IngestedFilesRepository, LocationRepository
-from services import IngestionService, LocationService
+from repository import (
+    IngestedFilesRepository,
+    LocationRepository,
+    ProcessFileRepository,
+)
+from services import IngestionService, LocationService, ProcessingService
 
 
 async def get_ingested_files_repo(
@@ -18,6 +22,10 @@ async def get_location_repo(
     return LocationRepository(db)
 
 
+async def get_process_file_repo() -> ProcessFileRepository:
+    return ProcessFileRepository()
+
+
 async def get_location_service(
     location_repo: LocationRepository = Depends(get_location_repo),
 ) -> LocationService:
@@ -29,3 +37,10 @@ async def get_ingestion_service(
     location_service: LocationService = Depends(get_location_service),
 ) -> IngestionService:
     return IngestionService(ingested_files_repo, location_service)
+
+
+async def get_processing_service(
+    ingestion_service: IngestionService = Depends(get_ingestion_service),
+    process_file_repo: ProcessFileRepository = Depends(get_process_file_repo),
+) -> ProcessingService:
+    return ProcessingService(ingestion_service, process_file_repo)

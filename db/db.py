@@ -13,7 +13,7 @@ DATABASE_URL = os.getenv("DB_URL")
 if not DATABASE_URL:
     raise ValueError("Critical Error: 'DATABASE_URL' is missing from the .env file.")
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_size=5)
 
 SessionLocal = sessionmaker(autocommit=False, bind=engine)
 
