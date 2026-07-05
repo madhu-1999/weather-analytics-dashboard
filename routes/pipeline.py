@@ -2,8 +2,8 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, status
 
-from dependencies import get_ingestion_service
-from services import IngestionService
+from dependencies import get_ingestion_service, get_processing_service
+from services import IngestionService, ProcessingService
 
 
 router = APIRouter()
@@ -18,5 +18,8 @@ async def ingest_data(
     await ingestion_service.start_ingestion(start_date, end_date)
 
 
-"""@router.post("/process", status_code=status.HTTP_202_ACCEPTED)
-async def process_data(processing_service: )"""
+@router.post("/process", status_code=status.HTTP_202_ACCEPTED)
+def process_data(
+    processing_service: ProcessingService = Depends(get_processing_service),
+) -> None:
+    processing_service.process_pending_files()

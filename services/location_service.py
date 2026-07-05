@@ -2,7 +2,7 @@ from typing import List
 
 from db.tables.config import LocationDB
 from repository import LocationRepository
-from models.location import LocationResponse
+from models.response import LocationResponse
 
 
 class LocationService:

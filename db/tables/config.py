@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base
-from models.enums import IngestionStatus
+from models.constants import IngestionStatus
 
 
 class LocationDB(Base):

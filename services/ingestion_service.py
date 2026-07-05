@@ -9,9 +9,12 @@ from urllib.parse import urlencode
 from dotenv import load_dotenv
 import requests
 from requests.adapters import HTTPAdapter
+from sqlalchemy.orm import Session
 from urllib3 import Retry
 
-from models.location import LocationResponse
+from db.tables.config import IngestedFilesDB
+from models.constants import IngestionStatus
+from models.response import IngestedFileResponse, LocationResponse
 from .location_service import LocationService
 
 load_dotenv()
@@ -22,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class IngestionService:
+    """Coordinates fetching weather data for known locations and tracking ingestion status."""
+
     def __init__(self, ingested_files_repo, location_service: LocationService) -> None:
         self.ingested_files_repo = ingested_files_repo
         self.location_service = location_service
@@ -194,3 +199,63 @@ class IngestionService:
             )
         except Exception as e:
             logger.error(f"An unexpected non-requests error occurred: {e}")
+
+    def get_pending_files(self) -> List[IngestedFileResponse]:
+        """Retrieve all files currently pending processing.
+
+        Returns:
+            List[IngestedFileResponse]: Pending ingested-file records,
+            Empty if none are pending.
+
+        Raises:
+            DatabaseError: If the underlying repository query fails.
+        """
+        pending_files: List[IngestedFilesDB] = (
+            self.ingested_files_repo.get_pending_files()
+        )
+
+        return self._convert_to_responses(pending_files)
+
+    def update_status(
+        self, session: Session, ingestion_id: int, status: IngestionStatus
+    ) -> None:
+        """Update the tracked status of an ingested file.
+
+        Args:
+            session (Session): SQLAlchemy session to use for the update.
+            ingestion_id (int): Identifier of the ingested-file record to
+                update.
+            status (IngestionStatus): New status to assign to the record.
+
+        Returns:
+            None.
+
+        Raises:
+            DatabaseError: If the underlying repository update fails.
+        """
+        self.ingested_files_repo.update_status(session, ingestion_id, status)
+
+    def _convert_to_responses(
+        self, files: List[IngestedFilesDB]
+    ) -> List[IngestedFileResponse]:
+        """Convert a list of ingested-file database records to response models.
+
+        Args:
+            files (List[IngestedFilesDB]): Database records to convert.
+
+        Returns:
+            List[IngestedFileResponse]: One response model per input record,
+            in the same order.
+        """
+        return [self._convert_to_response(file) for file in files]
+
+    def _convert_to_response(self, file: IngestedFilesDB) -> IngestedFileResponse:
+        """Convert a single ingested-file database record to a response model.
+
+        Args:
+            file (IngestedFilesDB): Database record to convert.
+
+        Returns:
+            IngestedFileResponse: Response model built from ``file``.
+        """
+        return IngestedFileResponse.model_validate(file)

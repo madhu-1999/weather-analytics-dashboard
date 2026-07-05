@@ -1,10 +1,10 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import BigInteger, Date, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from .config import LocationDB, WeatherCodesDB
+from db.tables.config import LocationDB, WeatherCodesDB
 from db.base import Base
 
 
@@ -78,6 +78,9 @@ class DailyWeatherMetricsDB(Base):
     cloud_cover_mean_percent: Mapped[Optional[int]] = mapped_column(Integer)
     relative_humidity_2m_mean_percent: Mapped[Optional[int]] = mapped_column(Integer)
     daylight_duration_sec: Mapped[Optional[int]] = mapped_column(Integer)
+
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now, nullable=False)
+    updated_at: Mapped[datetime | None] = mapped_column(default=None, nullable=True)
 
     __table_args__ = (Index("idx_weather_date", "weather_date"),)
 
