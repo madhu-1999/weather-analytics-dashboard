@@ -1,12 +1,10 @@
 from contextlib import contextmanager
 import os
+from typing import Iterator, Generator
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from dotenv import load_dotenv
-from sqlalchemy import inspect
-
-from logger import logger
-
 
 load_dotenv()
 
@@ -21,7 +19,7 @@ SessionLocal = sessionmaker(autocommit=False, bind=engine)
 
 
 @contextmanager
-def get_session():
+def session_scope() -> Iterator[Session]:
     db = SessionLocal()
     try:
         yield db
@@ -29,8 +27,6 @@ def get_session():
         db.close()
 
 
-# Sanity check
-inspector = inspect(engine)
-tables = inspector.get_table_names()
-logger.info(f"Tables in database: {tables}")
-logger.info(DATABASE_URL)
+def get_session() -> Generator[Session, None, None]:
+    with session_scope() as db:
+        yield db

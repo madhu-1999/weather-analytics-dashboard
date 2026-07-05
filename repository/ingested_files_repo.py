@@ -72,6 +72,6 @@ class IngestedFilesRepository:
             self.session.commit()
         except IntegrityError as e:
             self.session.rollback()
-            raise DatabaseError(f"Could not insert session: {str(e)}") from e
+            raise DatabaseError(f"Could not insert record: {str(e)}") from e
         except SQLAlchemyError as e:
-            raise DatabaseError(f"Failed to insert session: {str(e)}") from e
+            raise DatabaseError(f"Failed to insert record: {str(e)}") from e
