@@ -27,6 +27,23 @@ class IngestionService:
         self.location_service = location_service
 
     async def start_ingestion(self, start_date: date, end_date: date) -> None:
+        """Ingest weather/climate data for all known locations over a date range.
+
+        Args:
+            start_date (date): First date (inclusive) of the data range to
+                ingest for each location.
+            end_date (date): Last date (inclusive) of the data range to
+                ingest for each location.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: If ``DAILY_PARAMS`` is not set in the environment.
+            json.JSONDecodeError: If location data cannot be parsed as JSON.
+            AttributeError: If an expected attribute is missing from a
+                location or its data.
+        """
         DAILY_PARAMS = os.getenv("DAILY_PARAMS")
         if not DAILY_PARAMS:
             raise ValueError(
@@ -34,7 +51,7 @@ class IngestionService:
             )
 
         try:
-            cities: List[LocationResponse] = self.location_service.get_locations()
+            cities: List[LocationResponse] = await self.location_service.get_locations()
             for city in cities:
                 kwargs: dict = city.model_dump()
                 kwargs["start"] = start_date

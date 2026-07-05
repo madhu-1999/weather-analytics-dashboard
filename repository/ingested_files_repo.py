@@ -42,16 +42,6 @@ class IngestedFilesRepository:
             DatabaseError: If the insert violates a database constraint
                 or if the insert fails at the database layer, or if the insert executes
                 without error but returns no row.
-
-        Example:
-            >>> from datetime import date
-            >>> repo = IngestedFilesRepository(session)
-            >>> repo.insert_record(
-            ...     "SFO-2026-07-01_2026-07-02.json",
-            ...     "SFO",
-            ...     date(2026, 7, 1),
-            ...     date(2026, 7, 2),
-            ... )
         """
         try:
             stmt = (

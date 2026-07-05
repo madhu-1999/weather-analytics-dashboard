@@ -9,7 +9,18 @@ class LocationService:
     def __init__(self, location_repo: LocationRepository) -> None:
         self.location_repo = location_repo
 
-    def get_locations(self) -> List[LocationResponse]:
+    async def get_locations(self) -> List[LocationResponse]:
+        """Retrieve all known locations.
+
+        Args:
+            None.
+
+        Returns:
+            List[LocationResponse]: One response model per known location.
+
+        Raises:
+            ValueError: If no locations are found.
+        """
         locations: List[LocationDB] = self.location_repo.get_locations()
         if not locations:
             raise ValueError("No location information found!")

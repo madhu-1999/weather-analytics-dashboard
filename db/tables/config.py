@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Column, Date, DateTime, Enum, ForeignKey, Numeric, String
+from sqlalchemy import ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base
@@ -44,3 +44,10 @@ class IngestedFilesDB(Base):
     processed_at: Mapped[datetime | None] = mapped_column(default=None, nullable=True)
 
     location: Mapped["LocationDB"] = relationship(back_populates="ingested_files")
+
+
+class WeatherCodesDB(Base):
+    __tablename__ = "weather_codes"
+
+    weather_code: Mapped[int] = mapped_column(primary_key=True)
+    weather_description: Mapped[str] = mapped_column(String(100), nullable=False)
