@@ -22,7 +22,7 @@ from models.constants import (
     IngestionStatus,
 )
 from models.response import IngestedFileResponse
-from services import IngestionService
+from .ingestion_service import IngestionService
 from repository import ProcessFileRepository
 
 load_dotenv()

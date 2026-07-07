@@ -7,6 +7,7 @@ from repository import (
     LocationRepository,
     ProcessFileRepository,
     DateRepository,
+    MetricsRepository,
 )
 from services import (
     IngestionService,
@@ -14,6 +15,7 @@ from services import (
     ProcessingService,
     DateService,
     DashboardService,
+    MetricsService,
 )
 
 
@@ -35,6 +37,12 @@ async def get_date_repo(
     return DateRepository(db)
 
 
+async def get_metrics_repo(
+    db: Session = Depends(get_session),
+) -> MetricsRepository:
+    return MetricsRepository(db)
+
+
 async def get_process_file_repo() -> ProcessFileRepository:
     return ProcessFileRepository()
 
@@ -43,6 +51,12 @@ async def get_location_service(
     location_repo: LocationRepository = Depends(get_location_repo),
 ) -> LocationService:
     return LocationService(location_repo)
+
+
+async def get_metrics_service(
+    metrics_repo: MetricsRepository = Depends(get_metrics_repo),
+) -> MetricsService:
+    return MetricsService(metrics_repo)
 
 
 async def get_date_service(
@@ -68,5 +82,6 @@ async def get_processing_service(
 async def get_dashboard_service(
     location_service: LocationService = Depends(get_location_service),
     date_service: DateService = Depends(get_date_service),
+    metrics_service: MetricsService = Depends(get_metrics_service),
 ) -> DashboardService:
-    return DashboardService(location_service, date_service)
+    return DashboardService(location_service, date_service, metrics_service)

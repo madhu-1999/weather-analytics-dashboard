@@ -6,7 +6,12 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
-from exceptions import DatabaseError, FileProcessingError, FileReadError
+from exceptions import (
+    DatabaseError,
+    FileProcessingError,
+    FileReadError,
+    InvalidDateRangeError,
+)
 from routes import dashboard, pipeline
 
 load_dotenv()
@@ -64,6 +69,17 @@ def file_processing_error_handler(
     return JSONResponse(
         content="Internal Server Error",
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+@app.exception_handler(InvalidDateRangeError)
+def invalid_date_range_handler(
+    request: Request, exc: InvalidDateRangeError
+) -> JSONResponse:
+    logger.warning(f"Invalid date range: {exc}")
+    return JSONResponse(
+        content="Start date is after end date!",
+        status_code=status.HTTP_400_BAD_REQUEST,
     )
 
 

@@ -54,3 +54,28 @@ class FilterOptionsResponse(BaseModel):
             max_length=2,
         ),
     ]
+
+
+class KPICardData(BaseModel):
+    max_temp: Annotated[
+        Decimal, Field(description="Maximum temperature (°C) in selected date range")
+    ]
+    min_temp: Annotated[
+        Decimal, Field(description="Minimum temperature (°C) in selected date range")
+    ]
+    precipitation_days_sum: Annotated[
+        int, Field(description="Total precipitation days in selected date range")
+    ]
+    total_precipitation: Annotated[
+        Decimal, Field(description="Total precipitation (mm) in selected date range")
+    ]
+    max_wind_speed: Annotated[
+        Decimal, Field(description="Maximum wind speed (km/h) in selected date range")
+    ]
+    min_wind_speed: Annotated[
+        Decimal, Field(description="Minimum wind speed (km/h) in selected date range")
+    ]
+
+
+class SingleLocationDashboardDataResponse(BaseModel):
+    kpi_data: Annotated[KPICardData, Field(description="Data displayed in KPI card")]

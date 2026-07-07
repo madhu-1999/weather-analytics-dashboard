@@ -19,6 +19,7 @@ if not ASSETS_DIR:
     raise ValueError("Critical Error: 'ASSETS_DIR' is missing from the .env file.")
 
 GET_OPTIONS_ENDPT = "/dashboards/options"
+GET_DATA_ENDPT = "/dashboards/data"
 
 st.set_page_config(layout="wide")
 
@@ -27,7 +28,7 @@ st.set_page_config(layout="wide")
 def fetch_api_data(url):
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Raise error for bad responses
+        response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
         st.error(f"API Error: {e}")
@@ -115,42 +116,52 @@ def weather_kpi_card(
 
 
 # ---- Main execution UI container ----
-with st.container(
-    horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"
-):
-    kpi_col1, kpi_col2, kpi_col3 = st.columns(
-        3, gap="medium", vertical_alignment="center"
-    )
-
-    # Render Temperature
-    with kpi_col1:
-        weather_kpi_card(
-            title="Temperature",
-            max_label="Maximum",
-            max_value="45°C",
-            min_label="Minimum",
-            min_value="-32°C",
-            icon=":material/device_thermostat:",
+data_endpt = (
+    urljoin(BACKEND_BASE_URL, GET_DATA_ENDPT)
+    + f"/{airport_code_select}?start_date={start_date}&end_date={end_date}"
+)
+dashboard_data = fetch_api_data(data_endpt)
+if not dashboard_data:
+    st.error("No data found!")
+else:
+    with st.container(
+        horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"
+    ):
+        kpi_col1, kpi_col2, kpi_col3 = st.columns(
+            3, gap="medium", vertical_alignment="center"
         )
+        kpi_data = dashboard_data["kpi_data"]
+        # Render Temperature
+        with kpi_col1:
+            weather_kpi_card(
+                title="Temperature",
+                max_label="Maximum",
+                max_value=f"{kpi_data['max_temp']}°C",
+                min_label="Minimum",
+                min_value=f"{kpi_data['min_temp']}°C",
+                icon=":material/device_thermostat:",
+            )
 
-    # Render Precipitation
-    with kpi_col2:
-        weather_kpi_card(
-            title="Precipitation",
-            max_label="Total Days",
-            max_value="45 days",
-            min_label="Avg precipitation",
-            min_value="10 mm",
-            icon=":material/rainy:",
-        )
+        # Render Precipitation
+        with kpi_col2:
+            weather_kpi_card(
+                title="Precipitation",
+                max_label="Total Days",
+                max_value=f"{kpi_data['precipitation_days_sum']} days",
+                min_label="Total precipitation",
+                min_value=f"{kpi_data['total_precipitation']} mm",
+                icon=":material/rainy:",
+            )
 
-    # Render Wind Speed
-    with kpi_col3:
-        weather_kpi_card(
-            title="Wind speed",
-            max_label="Maximum",
-            max_value="45 km/h",
-            min_label="Minimum",
-            min_value="10 km/h",
-            icon=":material/air:",
-        )
+        # Render Wind Speed
+        with kpi_col3:
+            weather_kpi_card(
+                title="Wind speed",
+                max_label="Maximum",
+                max_value=f"{kpi_data['max_wind_speed']} km/h",
+                min_label="Minimum",
+                min_value=f"{kpi_data['min_wind_speed']} km/h",
+                icon=":material/air:",
+            )
+
+    st.divider()

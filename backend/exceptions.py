@@ -14,3 +14,9 @@ class FileProcessingError(Exception):
     """Custom exception for file processing operations"""
 
     pass
+
+
+class InvalidDateRangeError(Exception):
+    """Custom exception for invalid date range"""
+
+    pass
