@@ -56,7 +56,7 @@ class IngestionService:
             )
 
         try:
-            cities: List[LocationResponse] = await self.location_service.get_locations()
+            cities: List[LocationResponse] = self.location_service.get_locations()
             for city in cities:
                 kwargs: dict = city.model_dump()
                 kwargs["start"] = start_date

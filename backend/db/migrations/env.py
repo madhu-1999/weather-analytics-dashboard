@@ -7,9 +7,9 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from db.base import Base
-from db.tables.config import IngestedFilesDB, WeatherCodesDB, LocationDB
-from db.tables.weather_tables import DailyWeatherMetricsDB, DateDimDB
+from backend.db.base import Base
+from backend.db.tables.config import IngestedFilesDB, WeatherCodesDB, LocationDB
+from backend.db.tables.weather_tables import DailyWeatherMetricsDB, DateDimDB
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from exceptions import DatabaseError, FileProcessingError, FileReadError
-from routes import pipeline
+from routes import dashboard, pipeline
 
 load_dotenv()
 
@@ -34,6 +34,7 @@ logger.addHandler(f_handler)
 app = FastAPI()
 # Register routes
 app.include_router(pipeline, prefix="/pipeline", tags=["Pipeline"])
+app.include_router(dashboard, prefix="/dashboards", tags=["Dashboards"])
 
 
 # Exception handlers

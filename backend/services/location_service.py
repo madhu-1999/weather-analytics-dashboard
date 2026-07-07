@@ -9,7 +9,7 @@ class LocationService:
     def __init__(self, location_repo: LocationRepository) -> None:
         self.location_repo = location_repo
 
-    async def get_locations(self) -> List[LocationResponse]:
+    def get_locations(self) -> List[LocationResponse]:
         """Retrieve all known locations.
 
         Args:
