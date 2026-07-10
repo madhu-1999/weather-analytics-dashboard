@@ -2,6 +2,8 @@
 
 ## 1. Project Description
 
+This is an interactive tool for exploring historical weather trends across three major U.S. airports — San Francisco (SFO), Los Angeles (LAX), and Las Vegas (LAS) — from 2023 through 2025. Users pick an airport and a date range, then explore temperature, wind, precipitation, humidity, cloud cover, and dominant weather conditions at daily, weekly, monthly, or yearly granularity. The dashboard surfaces headline KPIs (record highs/lows, total precipitation, wind extremes) alongside trend charts, precipitation breakdowns, and a weather-conditions summary.
+
 ## 2. Tools Used
 
 | Tool / Library                        | Purpose                                                                              |
@@ -108,6 +110,13 @@ curl -X POST "http://127.0.0.1:8001/pipeline/ingest?start_date=2023-01-01&end_da
 
 # Clean, transform, and load staged files into the database (status COMPLETED)
 curl -X POST "http://127.0.0.1:8001/pipeline/process"
+```
+
+After processing, refresh the materialized views so weekly/monthly charts reflect the new data:
+
+```sql
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_weekly_weather;
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_monthly_weather;
 ```
 
 ### 6. Configure and run the frontend
