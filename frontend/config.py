@@ -25,7 +25,6 @@ def _require_env(key: str) -> str:
 
 
 BACKEND_BASE_URL = _require_env("BACKEND_BASE_URL")
-ASSETS_DIR = _require_env("ASSETS_DIR")
 
 OPTIONS_ENDPOINT = "/dashboards/options"
 DATA_ENDPOINT = "/dashboards/data"
