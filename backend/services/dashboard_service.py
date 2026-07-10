@@ -36,6 +36,14 @@ class DashboardService:
         self.metrics_service = metrics_service
 
     def get_options(self) -> FilterOptionsResponse:
+        """Provide the filter choices available to the dashboard UI.
+
+        Returns:
+            The set of selectable locations and the overall available date range.
+
+        Raises:
+            ValueError: If locations or dates cannot be retrieved.
+        """
         try:
             locations: List[LocationResponse] = self.location_service.get_locations()
             dates: List[DateResponse] = self.date_service.get_available_date_range()
@@ -51,6 +59,27 @@ class DashboardService:
         end_date: date,
         agg_level: AggLevelEnum,
     ) -> SingleLocationDashboardDataResponse:
+        """Build the full dashboard payload for a location over a date range.
+
+        Always includes summary KPIs, plus a time series at the granularity
+        (monthly, weekly, or daily) implied by the requested aggregation level.
+
+        Args:
+            airport_code: IATA/ICAO code identifying the airport.
+            start_date: Inclusive start of the reporting period.
+            end_date: Inclusive end of the reporting period; cannot be in
+                the future.
+            agg_level: Desired granularity of the returned time series.
+
+        Returns:
+            The assembled dashboard response for the location and period.
+
+        Raises:
+            InvalidDateRangeError: If the date range is invalid (start after
+                end, or end date in the future).
+            ValueError: If the underlying data cannot be retrieved or validated.
+        """
+
         if start_date > end_date or end_date > date.today():
             raise InvalidDateRangeError("Start date is after end date!")
         try:
@@ -102,12 +131,30 @@ class DashboardService:
     def _list_validate_model(
         cls, metrics: List[dict], metric_class: type[M]
     ) -> List[M]:
+        """Coerce a list of raw metric dicts into validated response models.
+
+        Args:
+            metrics: Raw metric records as returned by the repository layer.
+            metric_class: The Pydantic model type each record should conform to.
+
+        Returns:
+            Validated model instances, one per input record.
+        """
         return [
             cls._validate_model(metric_dict, metric_class) for metric_dict in metrics
         ]
 
     @staticmethod
     def _validate_model(metric_dict: dict, metric_class: type[M]) -> M:
+        """Validate a single raw metric dict against its response model.
+
+        Args:
+            metric_dict: A raw metric record.
+            metric_class: The Pydantic model type the record should conform to.
+
+        Returns:
+            The validated model instance.
+        """
         return metric_class.model_validate(metric_dict)
 
     @staticmethod
@@ -120,6 +167,20 @@ class DashboardService:
         weekly_metrics: List[WeeklyWeatherMetrics],
         daily_metrics: List[DailyWeatherMetrics],
     ) -> SingleLocationDashboardDataResponse:
+        """Assemble the KPI and time-series pieces into a single dashboard response.
+
+        Args:
+            airport_code: IATA/ICAO code identifying the airport.
+            start_date: Inclusive start of the reporting period.
+            end_date: Inclusive end of the reporting period.
+            data: Raw KPI aggregates as returned by the repository layer.
+            monthly_metrics: Monthly time series, if requested.
+            weekly_metrics: Weekly time series, if requested.
+            daily_metrics: Daily time series, if requested.
+
+        Returns:
+            The composed, validated dashboard response.
+        """
         kpi_data = {}
         kpi_data["max_temp"] = data["max_temp"]
         kpi_data["min_temp"] = data["min_temp"]
@@ -142,6 +203,15 @@ class DashboardService:
     def _convert_to_response(
         locations: List[LocationResponse], dates: List[DateResponse]
     ) -> FilterOptionsResponse:
+        """Combine location and date options into a single filter-options response.
+
+        Args:
+            locations: Available locations for selection.
+            dates: Available date range for selection.
+
+        Returns:
+            The validated filter options response.
+        """
         response = {}
         response["locations"] = locations
         response["date_range"] = dates

@@ -12,6 +12,15 @@ class DateRepository:
         self.session = session
 
     def get_available_date_range(self) -> List[dict]:
+        """Look up the earliest and latest dates with available weather data.
+
+        Returns:
+            The date-dimension records corresponding to the min and max dates
+            present in the data.
+
+        Raises:
+            DatabaseError: If the query cannot be executed.
+        """
         try:
             # Subqueries for min, max dates
             min_date_subquery = select(

@@ -17,6 +17,20 @@ class MetricsRepository:
     def get_kpi_metrics(
         self, airport_code: str, start_date: date, end_date: date
     ) -> dict:
+        """Summarize headline weather KPIs for an airport over a date range.
+
+        Args:
+            airport_code: IATA/ICAO code identifying the airport.
+            start_date: Inclusive start of the reporting period.
+            end_date: Inclusive end of the reporting period.
+
+        Returns:
+            A dict of aggregate KPI values (extremes, precipitation totals,
+            wind extremes) for the period, or an empty dict if no data exists.
+
+        Raises:
+            DatabaseError: If the query cannot be executed.
+        """
         try:
             stmt = select(
                 func.max(DailyWeatherMetricsDB.temperature_2m_max_celsius).label(
@@ -51,6 +65,22 @@ class MetricsRepository:
     def get_monthly_metrics(
         self, airport_code: str, start_date: date, end_date: date
     ) -> List[dict]:
+        """Retrieve pre-aggregated monthly weather statistics for an airport.
+
+        Resolves the given dates to their containing (year, month) periods and
+        returns all monthly summaries within that inclusive range.
+
+        Args:
+            airport_code: IATA/ICAO code identifying the airport.
+            start_date: Any date within the first month of the desired range.
+            end_date: Any date within the last month of the desired range.
+
+        Returns:
+            Monthly weather summaries ordered chronologically.
+
+        Raises:
+            DatabaseError: If the query cannot be executed.
+        """
         try:
             # Subquery for the start date tuple (year, month)
             start_subquery = (
@@ -103,17 +133,39 @@ class MetricsRepository:
     def get_weekly_metrics(
         self, airport_code: str, start_date: date, end_date: date
     ) -> List[dict]:
+        """Retrieve pre-aggregated weekly weather statistics for an airport.
+
+        Resolves the given dates to their containing ISO (year, week) periods
+        and returns all weekly summaries within that inclusive range.
+
+        Args:
+            airport_code: IATA/ICAO code identifying the airport.
+            start_date: Any date within the first ISO week of the desired range.
+            end_date: Any date within the last ISO week of the desired range.
+
+        Returns:
+            Weekly weather summaries ordered chronologically.
+
+        Raises:
+            DatabaseError: If the query cannot be executed.
+        """
+
         try:
             # Subquery for the start date tuple (year, week_of_year)
-            start_subquery = (
-                select(DateDimDB.year_int, DateDimDB.week_of_year)
+            start_iso_subquery = (
+                select(
+                    func.extract("isoyear", DateDimDB.weather_date),
+                    func.extract("week", DateDimDB.weather_date),
+                )
                 .where(DateDimDB.weather_date == start_date)
                 .scalar_subquery()
             )
-
             # Subquery for the end date tuple (year, week_of_year)
-            end_subquery = (
-                select(DateDimDB.year_int, DateDimDB.week_of_year)
+            end_iso_subquery = (
+                select(
+                    func.extract("isoyear", DateDimDB.weather_date),
+                    func.extract("week", DateDimDB.weather_date),
+                )
                 .where(DateDimDB.weather_date == end_date)
                 .scalar_subquery()
             )
@@ -137,9 +189,9 @@ class MetricsRepository:
                 .where(
                     WeeklyWeatherMV.airport_code == airport_code,
                     tuple_(WeeklyWeatherMV.year_int, WeeklyWeatherMV.week_of_year)
-                    >= start_subquery,
+                    >= start_iso_subquery,
                     tuple_(WeeklyWeatherMV.year_int, WeeklyWeatherMV.week_of_year)
-                    <= end_subquery,
+                    <= end_iso_subquery,
                 )
                 .order_by(
                     WeeklyWeatherMV.year_int.asc(), WeeklyWeatherMV.week_of_year.asc()
@@ -155,6 +207,21 @@ class MetricsRepository:
     def get_daily_metrics(
         self, airport_code: str, start_date: date, end_date: date
     ) -> List[dict]:
+        """Retrieve raw daily weather metrics for an airport, including
+        human-readable weather condition descriptions.
+
+        Args:
+            airport_code: IATA/ICAO code identifying the airport.
+            start_date: Inclusive start of the desired range.
+            end_date: Inclusive end of the desired range.
+
+        Returns:
+            One record per day in range, with temperature, wind, precipitation,
+            cloud cover, and weather code/description fields.
+
+        Raises:
+            DatabaseError: If the query cannot be executed.
+        """
         try:
             stmt = (
                 select(
