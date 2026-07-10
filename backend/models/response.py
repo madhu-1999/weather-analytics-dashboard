@@ -77,5 +77,116 @@ class KPICardData(BaseModel):
     ]
 
 
+class MonthlyWeatherMetrics(BaseModel):
+    year_int: Annotated[int, Field(description="Year in format: YYYY")]
+    month_int: Annotated[int, Field(description="Month number (1-12)")]
+    temp_mean: Annotated[Decimal, Field(description="Avg monthly temperature (°C)")]
+    temp_min: Annotated[Decimal, Field(description="Maximum monthly temperature (°C)")]
+    temp_max: Annotated[Decimal, Field(description="Minimum monthly temperature (°C)")]
+    wind_speed_mean: Annotated[
+        Decimal, Field(description="Avg monthly wind speed (km/h)")
+    ]
+    wind_speed_max: Annotated[
+        Decimal, Field(description="Maximum monthly wind speed (km/h)")
+    ]
+    wind_speed_min: Annotated[
+        Decimal, Field(description="Minimum monthly wind speed (km/h)")
+    ]
+    wind_gusts_mean: Annotated[
+        Decimal, Field(description="Avg monthly wind gust speed (km/h)")
+    ]
+    wind_gusts_max: Annotated[
+        Decimal, Field(description="Maximum monthly wind gust speed (km/h)")
+    ]
+    wind_gusts_min: Annotated[
+        Decimal, Field(description="Minimum monthly wind gustspeed (km/h)")
+    ]
+    precipitation_sum: Annotated[
+        Decimal, Field(description="Total monthly precipitation (mm)")
+    ]
+    precipitation_hours: Annotated[
+        int, Field(description="Total monthly precipitation hours")
+    ]
+
+
+class WeeklyWeatherMetrics(BaseModel):
+    year_int: Annotated[int, Field(description="Year in format: YYYY")]
+    week_of_year: Annotated[int, Field(description="Week number (1-54)")]
+    temp_mean: Annotated[Decimal, Field(description="Avg monthly temperature (°C)")]
+    temp_min: Annotated[Decimal, Field(description="Maximum monthly temperature (°C)")]
+    temp_max: Annotated[Decimal, Field(description="Minimum monthly temperature (°C)")]
+    wind_speed_mean: Annotated[
+        Decimal, Field(description="Avg monthly wind speed (km/h)")
+    ]
+    wind_speed_max: Annotated[
+        Decimal, Field(description="Maximum monthly wind speed (km/h)")
+    ]
+    wind_speed_min: Annotated[
+        Decimal, Field(description="Minimum monthly wind speed (km/h)")
+    ]
+    wind_gusts_mean: Annotated[
+        Decimal, Field(description="Avg monthly wind gust speed (km/h)")
+    ]
+    wind_gusts_max: Annotated[
+        Decimal, Field(description="Maximum monthly wind gust speed (km/h)")
+    ]
+    wind_gusts_min: Annotated[
+        Decimal, Field(description="Minimum monthly wind gustspeed (km/h)")
+    ]
+    precipitation_sum: Annotated[
+        Decimal, Field(description="Total monthly precipitation (mm)")
+    ]
+    precipitation_hours: Annotated[
+        int, Field(description="Total monthly precipitation hours")
+    ]
+
+
+class DailyWeatherMetrics(BaseModel):
+    weather_date: Annotated[date, Field(description="Date in format: YYYY-MM-DD")]
+    temp_mean: Annotated[Decimal, Field(description="Avg monthly temperature (°C)")]
+    temp_min: Annotated[Decimal, Field(description="Maximum monthly temperature (°C)")]
+    temp_max: Annotated[Decimal, Field(description="Minimum monthly temperature (°C)")]
+    wind_speed_mean: Annotated[
+        Decimal, Field(description="Avg monthly wind speed (km/h)")
+    ]
+    wind_speed_max: Annotated[
+        Decimal, Field(description="Maximum monthly wind speed (km/h)")
+    ]
+    wind_speed_min: Annotated[
+        Decimal, Field(description="Minimum monthly wind speed (km/h)")
+    ]
+    wind_gusts_mean: Annotated[
+        Decimal, Field(description="Avg monthly wind gust speed (km/h)")
+    ]
+    wind_gusts_max: Annotated[
+        Decimal, Field(description="Maximum monthly wind gust speed (km/h)")
+    ]
+    wind_gusts_min: Annotated[
+        Decimal, Field(description="Minimum monthly wind gustspeed (km/h)")
+    ]
+    precipitation_sum: Annotated[
+        Decimal, Field(description="Total monthly precipitation (mm)")
+    ]
+    precipitation_hours: Annotated[
+        int, Field(description="Total monthly precipitation hours")
+    ]
+
+
 class SingleLocationDashboardDataResponse(BaseModel):
+    airport_code: Annotated[str, Field(description="IATA airport code")]
+    start_date: Annotated[date, Field(description="Start date of date range")]
+    end_date: Annotated[date, Field(description="End date of date range")]
+
     kpi_data: Annotated[KPICardData, Field(description="Data displayed in KPI card")]
+    monthly_metrics: Annotated[
+        List[Optional[MonthlyWeatherMetrics]],
+        Field(description="Monthly metrics for the date range"),
+    ]
+    weekly_metrics: Annotated[
+        List[Optional[WeeklyWeatherMetrics]],
+        Field(description="Weekly metrics for the date range"),
+    ]
+    daily_metrics: Annotated[
+        List[Optional[DailyWeatherMetrics]],
+        Field(description="Daily metrics for the date range"),
+    ]

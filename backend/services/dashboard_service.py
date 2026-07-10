@@ -1,19 +1,27 @@
 from datetime import date
 import logging
-from typing import List
+from typing import List, TypeVar
+
+from pydantic import BaseModel
 
 from exceptions import InvalidDateRangeError
+from models.constants import AggLevelEnum
 from models.response import (
+    DailyWeatherMetrics,
     DateResponse,
     FilterOptionsResponse,
     LocationResponse,
+    MonthlyWeatherMetrics,
     SingleLocationDashboardDataResponse,
+    WeeklyWeatherMetrics,
 )
 from .date_service import DateService
 from .location_service import LocationService
 from .metrics_service import MetricsService
 
 logger = logging.getLogger(__name__)
+
+M = TypeVar("M", bound=BaseModel)
 
 
 class DashboardService:
@@ -37,22 +45,80 @@ class DashboardService:
             raise ValueError(f"Dashboard data error encountered: {str(e)}") from e
 
     def get_data(
-        self, airport_code: str, start_date: date, end_date: date
+        self,
+        airport_code: str,
+        start_date: date,
+        end_date: date,
+        agg_level: AggLevelEnum,
     ) -> SingleLocationDashboardDataResponse:
         if start_date > end_date:
             raise InvalidDateRangeError("Start date is after end date!")
         try:
-            data: dict = self.metrics_service.get_data(
+            kpi_data: dict = self.metrics_service.get_kpi_metrics(
                 airport_code, start_date, end_date
             )
-            return type(self)._construct_dashboard_response(data)
+            monthly_metrics: List[MonthlyWeatherMetrics] = []
+            weekly_metrics: List[WeeklyWeatherMetrics] = []
+            daily_metrics: List[DailyWeatherMetrics] = []
+            if agg_level == AggLevelEnum.YEAR or agg_level == AggLevelEnum.MONTH:
+                monthly_metrics_dict: List[dict] = (
+                    self.metrics_service.get_monthly_metrics(
+                        airport_code, start_date, end_date
+                    )
+                )
+                monthly_metrics = type(self)._list_validate_model(
+                    monthly_metrics_dict, MonthlyWeatherMetrics
+                )
+            elif agg_level == AggLevelEnum.WEEK:
+                weekly_metrics_dict: List[dict] = (
+                    self.metrics_service.get_weekly_metrics(
+                        airport_code, start_date, end_date
+                    )
+                )
+                weekly_metrics = type(self)._list_validate_model(
+                    weekly_metrics_dict, WeeklyWeatherMetrics
+                )
+            else:
+                daily_metrics_dict: List[dict] = self.metrics_service.get_daily_metrics(
+                    airport_code, start_date, end_date
+                )
+                daily_metrics = type(self)._list_validate_model(
+                    daily_metrics_dict, DailyWeatherMetrics
+                )
+            return type(self)._construct_dashboard_response(
+                airport_code,
+                start_date,
+                end_date,
+                kpi_data,
+                monthly_metrics,
+                weekly_metrics,
+                daily_metrics,
+            )
         except Exception as e:
             logger.error(f"Error encountered while fetching data: {e}")
             raise ValueError(f"Dashboard data error encountered: {str(e)}") from e
 
+    @classmethod
+    def _list_validate_model(
+        cls, metrics: List[dict], metric_class: type[M]
+    ) -> List[M]:
+        return [
+            cls._validate_model(metric_dict, metric_class) for metric_dict in metrics
+        ]
+
+    @staticmethod
+    def _validate_model(metric_dict: dict, metric_class: type[M]) -> M:
+        return metric_class.model_validate(metric_dict)
+
     @staticmethod
     def _construct_dashboard_response(
+        airport_code: str,
+        start_date: date,
+        end_date: date,
         data: dict,
+        monthly_metrics: List[MonthlyWeatherMetrics],
+        weekly_metrics: List[WeeklyWeatherMetrics],
+        daily_metrics: List[DailyWeatherMetrics],
     ) -> SingleLocationDashboardDataResponse:
         kpi_data = {}
         kpi_data["max_temp"] = data["max_temp"]
@@ -63,7 +129,13 @@ class DashboardService:
         kpi_data["min_wind_speed"] = data["min_wind_speed"]
 
         result = {}
+        result["airport_code"] = airport_code
+        result["start_date"] = start_date
+        result["end_date"] = end_date
         result["kpi_data"] = kpi_data
+        result["monthly_metrics"] = monthly_metrics
+        result["weekly_metrics"] = weekly_metrics
+        result["daily_metrics"] = daily_metrics
         return SingleLocationDashboardDataResponse.model_validate(result)
 
     @staticmethod

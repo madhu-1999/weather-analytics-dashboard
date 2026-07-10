@@ -1,16 +1,13 @@
 [project]
-name = "weather-analytics-dashboard"
+name = "frontend"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "alembic>=1.18.5",
-    "fastapi[standard]>=0.139.0",
     "pandas>=3.0.3",
-    "psycopg2>=2.9.12",
+    "plotly>=6.9.0",
     "python-dotenv>=1.2.2",
     "requests>=2.34.2",
-    "sqlalchemy>=2.0.51",
-    "urllib3>=2.7.0",
+    "streamlit>=1.59.1",
 ]

@@ -8,6 +8,13 @@ class IngestionStatus(StrEnum):
     FAILED = "FAILED"
 
 
+class AggLevelEnum(StrEnum):
+    YEAR = "year"
+    MONTH = "month"
+    WEEK = "week"
+    DAY = "day"
+
+
 FLOAT_COLS = [
     "daily.wind_gusts_10m_mean",
     "daily.wind_speed_10m_mean",
