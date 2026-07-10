@@ -1,4 +1,4 @@
-# weather-analytics-dashboard
+# Weather Analytics Dashboard
 
 ## 1. Project Description
 
@@ -24,10 +24,18 @@ This is an interactive tool for exploring historical weather trends across three
 | **uv**                                | Python dependency and virtual environment management (`pyproject.toml` / `uv.lock`)  |
 
 ## 3. Architecture Description
+![System Design](https://raw.githubusercontent.com/madhu-1999/weather-analytics-dashboard/main/system-overview.drawio.png)
 
-## 4. Data Summary
+Ingestion — For each configured airport (location), the backend calls the Open-Meteo API for a given date range, writes the raw JSON response to a local data directory, and inserts a tracking record (ingested_files) with status PENDING.
+
+Processing — A worker pool picks up PENDING files, flattens and explodes the nested daily JSON arrays into a tabular pandas DataFrame, casts types, imputes missing values, clips out-of-range readings, engineers date-dimension fields (day of week, week/month/quarter/year, etc.), and upserts the result/ignores the data, depending on the table into PostgreSQL. File status transitions through PENDING → PROCESSING → COMPLETED/FAILED, so a failed file can be identified and retried without reprocessing everything.
+
+Storage — Cleaned data lands in a small relational schema: a locations reference table, a weather_codes lookup, a date_dimension table of calendar attributes, and a central daily_weather_metrics fact table keyed by airport and date. An ingested_files table tracks pipeline state for observability.
+
+Presentation — The FastAPI backend exposes read-only dashboard endpoints (filter options, aggregated KPI and metric data) that the Streamlit frontend calls through a thin, cached API client. The frontend performs light client-side reshaping (bucketing, yearly roll-ups) before rendering KPI cards and Plotly charts
 
 ## 5. SQL Tables ERD
+![ERD](https://raw.githubusercontent.com/madhu-1999/weather-analytics-dashboard/main/erd.png)
 
 ## 6. Setup and Run Instructions
 
