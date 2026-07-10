@@ -4,6 +4,7 @@ from typing import List
 from sqlalchemy import case, func, select, tuple_
 from sqlalchemy.orm import Session
 
+from db.tables.config import WeatherCodesDB
 from db.tables.views import MonthlyWeatherMV, WeeklyWeatherMV
 from db.tables.weather_tables import DailyWeatherMetricsDB, DateDimDB
 from exceptions import DatabaseError
@@ -155,22 +156,50 @@ class MetricsRepository:
         self, airport_code: str, start_date: date, end_date: date
     ) -> List[dict]:
         try:
-            stmt = select(
-                DailyWeatherMetricsDB.weather_date,
-                DailyWeatherMetricsDB.temperature_2m_mean_celsius.label("temp_mean"),
-                DailyWeatherMetricsDB.temperature_2m_max_celsius.label("temp_max"),
-                DailyWeatherMetricsDB.temperature_2m_min_celsius.label("temp_min"),
-                DailyWeatherMetricsDB.wind_speed_10m_mean_kmh.label("wind_speed_mean"),
-                DailyWeatherMetricsDB.wind_speed_10m_max_kmh.label("wind_speed_max"),
-                DailyWeatherMetricsDB.wind_speed_10m_min_kmh.label("wind_speed_min"),
-                DailyWeatherMetricsDB.wind_gusts_10m_mean_kmh.label("wind_gusts_mean"),
-                DailyWeatherMetricsDB.wind_gusts_10m_max_kmh.label("wind_gusts_max"),
-                DailyWeatherMetricsDB.wind_gusts_10m_min_kmh.label("wind_gusts_min"),
-                DailyWeatherMetricsDB.precipitation_sum_mm.label("precipitation_sum"),
-                DailyWeatherMetricsDB.precipitation_hours,
-            ).where(
-                DailyWeatherMetricsDB.airport_code == airport_code,
-                DailyWeatherMetricsDB.weather_date.between(start_date, end_date),
+            stmt = (
+                select(
+                    DailyWeatherMetricsDB.weather_date,
+                    DailyWeatherMetricsDB.temperature_2m_mean_celsius.label(
+                        "temp_mean"
+                    ),
+                    DailyWeatherMetricsDB.temperature_2m_max_celsius.label("temp_max"),
+                    DailyWeatherMetricsDB.temperature_2m_min_celsius.label("temp_min"),
+                    DailyWeatherMetricsDB.wind_speed_10m_mean_kmh.label(
+                        "wind_speed_mean"
+                    ),
+                    DailyWeatherMetricsDB.wind_speed_10m_max_kmh.label(
+                        "wind_speed_max"
+                    ),
+                    DailyWeatherMetricsDB.wind_speed_10m_min_kmh.label(
+                        "wind_speed_min"
+                    ),
+                    DailyWeatherMetricsDB.wind_gusts_10m_mean_kmh.label(
+                        "wind_gusts_mean"
+                    ),
+                    DailyWeatherMetricsDB.wind_gusts_10m_max_kmh.label(
+                        "wind_gusts_max"
+                    ),
+                    DailyWeatherMetricsDB.wind_gusts_10m_min_kmh.label(
+                        "wind_gusts_min"
+                    ),
+                    DailyWeatherMetricsDB.precipitation_sum_mm.label(
+                        "precipitation_sum"
+                    ),
+                    DailyWeatherMetricsDB.precipitation_hours,
+                    DailyWeatherMetricsDB.cloud_cover_mean_percent.label(
+                        "cloud_cover_mean"
+                    ),
+                    WeatherCodesDB.weather_code,
+                    WeatherCodesDB.weather_description.label("weather_code_mapping"),
+                )
+                .join(
+                    WeatherCodesDB,
+                    DailyWeatherMetricsDB.weather_code == WeatherCodesDB.weather_code,
+                )
+                .where(
+                    DailyWeatherMetricsDB.airport_code == airport_code,
+                    DailyWeatherMetricsDB.weather_date.between(start_date, end_date),
+                )
             )
             results = self.session.execute(stmt).mappings().all()
             return [dict(result) for result in results if results is not None]

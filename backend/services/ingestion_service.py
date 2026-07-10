@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from urllib3 import Retry
 
 from db.tables.config import IngestedFilesDB
+from exceptions import InvalidDateRangeError
 from models.constants import IngestionStatus
 from models.response import IngestedFileResponse, LocationResponse
 from .location_service import LocationService
@@ -54,7 +55,8 @@ class IngestionService:
             raise ValueError(
                 "Critical Error: 'DAILY_PARAMS' is missing from the .env file."
             )
-
+        if start_date > end_date or end_date > date.today():
+            raise InvalidDateRangeError("Invalid date range provided!")
         try:
             cities: List[LocationResponse] = self.location_service.get_locations()
             for city in cities:

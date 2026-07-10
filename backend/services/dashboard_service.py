@@ -51,7 +51,7 @@ class DashboardService:
         end_date: date,
         agg_level: AggLevelEnum,
     ) -> SingleLocationDashboardDataResponse:
-        if start_date > end_date:
+        if start_date > end_date or end_date > date.today():
             raise InvalidDateRangeError("Start date is after end date!")
         try:
             kpi_data: dict = self.metrics_service.get_kpi_metrics(

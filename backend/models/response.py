@@ -170,6 +170,9 @@ class DailyWeatherMetrics(BaseModel):
     precipitation_hours: Annotated[
         int, Field(description="Total monthly precipitation hours")
     ]
+    cloud_cover_mean: Annotated[int, Field(description="Avg cloud cover distribution")]
+    weather_code: Annotated[int, Field(description="Weather code")]
+    weather_code_mapping: Annotated[str, Field(description="Weather code description")]
 
 
 class SingleLocationDashboardDataResponse(BaseModel):

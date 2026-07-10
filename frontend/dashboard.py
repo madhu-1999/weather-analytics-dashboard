@@ -10,6 +10,8 @@ import requests
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as bg
+from plotly.subplots import make_subplots
 
 
 load_dotenv()
@@ -364,11 +366,159 @@ else:
     for tab, name in zip(tabs, tab_names):
         if tab.open:
             with tab:
-                # Code inside here ONLY runs when that specific tab is active/clicked
-                render_metric_line_chart(
-                    metric=metric_select, agg_level=AggLevelEnum[name.upper()]
-                )
+                with st.spinner(f"Loading {name.lower()} trends..."):
+                    render_metric_line_chart(
+                        metric=metric_select, agg_level=AggLevelEnum[name.upper()]
+                    )
 
     st.divider()
     with st.container():
+        monthly_data = fetch_dashboard_data(agg_level=AggLevelEnum.MONTH)
+        if not monthly_data:
+            st.error("No data found!")
+        else:
+            precipitation_df = clean_metrics(monthly_data, agg_level=AggLevelEnum.MONTH)
+            precip_fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+            # Add Bars for Precipitation Sum (Primary Axis)
+            precip_fig.add_trace(
+                bg.Bar(
+                    x=precipitation_df["month_str"],
+                    y=precipitation_df["precipitation_sum"],
+                    name="Precipitation Sum (mm)",
+                    marker_color="rgb(55, 83, 109)",
+                ),
+                secondary_y=False,
+            )
+
+            # Add Line for Precipitation Hours (Secondary Axis)
+            precip_fig.add_trace(
+                bg.Scatter(
+                    x=precipitation_df["month_str"],
+                    y=precipitation_df["precipitation_hours"],
+                    name="Precipitation Hours",
+                    mode="lines+markers",
+                    marker_color="rgb(26, 118, 255)",
+                    line=dict(width=3),
+                ),
+                secondary_y=True,
+            )
+
+            precip_fig.update_layout(
+                title_text="Monthly Precipitation: Volume vs. Duration",
+                xaxis=dict(
+                    type="category", title="Month", rangeslider=dict(visible=True)
+                ),
+                legend=dict(
+                    orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+                ),
+            )
+
+            precip_fig.update_yaxes(title_text="<b>Sum</b> (mm)", secondary_y=False)
+            precip_fig.update_yaxes(
+                title_text="<b>Duration</b> (Hours)", secondary_y=True
+            )
+            if len(precipitation_df) > 12:
+                precip_fig.update_xaxes(range=[0, 11])
+            st.plotly_chart(precip_fig, width="stretch")
+
+        with st.expander("Why do these charts sometimes show different totals?"):
+            st.markdown("""
+            * **Cloud Cover** is calculated as a strict **24-hour mathematical average** of sky coverage.
+            * **Weather Conditions (Pie Chart)** reflects the **dominant or highest-impact weather event** recorded that day.
+            
+            *Example:* A day that is clear for 20 hours but experiences a sudden 4-hour heavy thunderstorm will be classified as **"Thunderstorm"** in the condition chart, but its average daily cloud cover might only register as **"Mainly Clear"**.
+            """)
         col1, col2 = st.columns(2, gap="small", vertical_alignment="center")
+
+        daily_data = fetch_dashboard_data(agg_level=AggLevelEnum.DAY)
+        if not daily_data:
+            st.error("No data found!")
+        else:
+            daily_df = clean_metrics(daily_data, agg_level=AggLevelEnum.DAY)
+
+            # Mapping avg cloud cover % to categories
+            bins = [-0.1, 0.0, 25.0, 75.0, 100.0]
+            labels = ["Clear sky", "Mainly clear", "Partly cloudy", "Overcast"]
+            daily_df["cloud_category"] = pd.cut(
+                daily_df["cloud_cover_mean"],
+                bins=bins,
+                labels=labels,
+                include_lowest=True,
+            )
+
+            # Get count per category safely without column name collision
+            counts = daily_df["cloud_category"].value_counts().reset_index()
+
+            category_colors = {
+                "Clear sky": "#FFD700",  # Sunny Yellow
+                "Mainly clear": "#90EE90",  # Light Green
+                "Partly cloudy": "#ADD8E6",  # Light Blue
+                "Overcast": "#808080",  # Muted Grey
+            }
+
+            legend_labels = {
+                "Clear sky": "Clear sky (0%)",
+                "Mainly clear": "Mainly clear (1% - 25%)",
+                "Partly cloudy": "Partly cloudy (26% - 75%)",
+                "Overcast": "Overcast (76% - 100%)",
+                "cloud_category": "Cloud Category Mapping",
+                "count": "Days Count",
+            }
+
+            # Apply the labels to counts
+            counts["legend_group"] = counts["cloud_category"].map(legend_labels)
+            cloud_cover_fig = px.bar(
+                counts,
+                x="cloud_category",
+                y="count",
+                color="legend_group",
+                color_discrete_map=category_colors,
+                title="24-Hour Avg Cloud Coverage",
+                labels={
+                    "cloud_category": "Cloud cover category",
+                    "count": "count",
+                },
+            )
+
+            cloud_cover_fig.update_layout(
+                legend_title_text="Category Ranges",
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=1.02),
+            )
+            cloud_cover_fig.update_xaxes(nticks=10)
+            cloud_cover_fig.update_yaxes(nticks=5)
+            col1.plotly_chart(cloud_cover_fig, width="stretch")
+
+            weather_codes_fig = px.pie(
+                daily_df,
+                names="weather_code_mapping",
+                title="Dominant Weather Impact Events",
+                hole=0.4,
+                labels={
+                    "weather_code_mapping": "Weather Condition",
+                    "count": "Number of Days",
+                },
+            )
+
+            weather_codes_fig.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                insidetextorientation="horizontal",
+                hovertemplate="<b>%{label}</b><br>Days: %{value}<br>Percentage: %{percent}<extra></extra>",
+            )
+
+            weather_codes_fig.update_layout(
+                showlegend=True,
+                legend_title_text="Conditions",
+                legend=dict(
+                    orientation="v",
+                    yanchor="middle",
+                    y=0.5,
+                    xanchor="left",
+                    x=1.05,
+                ),
+                margin=dict(
+                    t=50, b=20, l=20, r=20
+                ),  # Compact margins for better layout fit
+            )
+            col2.plotly_chart(weather_codes_fig, width="stretch")
